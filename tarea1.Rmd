@@ -1,0 +1,384 @@
+---
+title: "Tarea 1. Módulo III. Ciencia de Datos."
+author: "Radha"
+date: "2024-09-01"
+output: html_document
+---
+
+# Tarea 1: Análisis de Regresión Lineal y Pruebas de Hipótesis
+
+```{r}
+# Importo la librería reticulate para usar Python en R
+library(reticulate)
+# Creo un objeto path
+path_to_python <- "C:/Users/radha/AppData/Local/Programs/Python/Python310/python.exe"
+use_python(path_to_python)
+```
+
+Pruebo que R funcione:
+
+```{r}
+5*5
+```
+
+Pruebo que Python funcione:
+
+```{python}
+5*5
+```
+
+## Objetivo:
+
+Realizar un análisis de regresión lineal utilizando las siguientes tres variables, seguido
+de pruebas de hipótesis y un análisis de los residuos para validar los resultados
+obtenidos. Se espera que se siga un proceso detallado que el análisis exploratorio de
+las variables, la construcción del modelo, la validación de suposiciones y presentación
+de conclusiones.
+
+Tabla de variables:
+
+```{python}
+# Importo librerías de análisis estadístico
+import pandas as pd
+import numpy as np
+# Importo paquetería de visualización
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Con numpy genero un array de las variables
+
+ventas = np.array([200000, 210000, 215000, 220000, 225000, 230000, 235000, 240000, 245000, 250000, 255000, 260000, 265000, 270000, 275000, 280000, 285000, 290000, 295000, 300000, 305000, 310000, 315000, 320000, 325000, 330000, 335000, 340000, 345000, 350000])
+
+gasto_publicidad = np.array([20000, 22000, 23000, 25000, 26000, 28000, 29000, 31000, 32000, 33000, 35000, 36000, 37000, 39000, 40000, 42000, 43000, 45000, 46000, 48000, 49000, 51000, 52000, 54000, 55000, 57000, 58000, 60000, 61000, 63000])
+
+empleados = np.array([50, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80])
+
+# Genero un DataFrame con los arrays creados
+tabla = pd.DataFrame({'ventas': ventas, 'gasto_de_publicidad': gasto_publicidad, 'numero_de_empleados': empleados})
+
+# Visualizo el head del DataFrame para comprobar que lo creé correctamente
+tabla.head(5)
+```
+
+# Paso 1: Análisis Descriptivo de las Variables
+
+## Instrucciones:
+
+### - Realiza un análisis descriptivo de las tres variables proporcionadas en la tabla.
+### - Criterio: Incluye medidas de tendencia central (media, mediana) y dispersión (desviación estándar, rango), así como un análisis gráfico de las distribuciones (histogramas o gráficos de caja). Comenta sobre la distribución de cada variable y cualquier observación relevante que puedas hacer sobre esos datos.
+
+```{python}
+# Medidas de tendencia central
+# Media y mediana
+
+ventas_mean = tabla['ventas'].mean()
+ventas_median = tabla['ventas'].median()
+
+gasto_mean = tabla['gasto_de_publicidad'].mean()
+gasto_median = tabla['gasto_de_publicidad'].median()
+
+empleados_mean = tabla['numero_de_empleados'].mean()
+empleados_median = tabla['numero_de_empleados'].median()
+
+# Las imprimo con un print para mejor presentación
+print('La media de ventas es: ', ventas_mean,
+      'La mediana de ventas es: ', ventas_median,
+      'La media del gasto de publicidad es: ', gasto_mean,
+      'La mediana del gasto de publicidad es: ', gasto_median,
+      'La media del número de empleados es: ', empleados_mean,
+      'La mediana del número de empleados es: ', empleados_median, sep='\n')
+```
+
+```{python}
+# O las combino en una sola tabla con aggregation (agg)
+
+tc_ventas = tabla['ventas'].agg(['mean', 'median']).reset_index()
+
+tc_gasto = tabla['gasto_de_publicidad'].agg(['mean', 'median']).reset_index()
+
+tc_empleados = tabla['numero_de_empleados'].agg(['mean', 'median']).reset_index()
+
+print(tc_ventas,
+      tc_gasto,
+      tc_empleados, sep='\n')
+```
+
+```{python}
+# Medidas de dispersión
+# Desviación estándar y rango
+
+# Primero calculo la varianza
+ventas_var = np.var(tabla[['ventas']])
+print("La varianza de las ventas es: ", ventas_var)
+
+# La desviación estándar es la raíz de la varianza
+ventas_de = np.sqrt(ventas_var)
+print("La desviación estándar de las ventas es: ", ventas_de)
+
+# Rango
+# El rango es la diferencia entre el mayor y el menor valor de los datos.
+ventas_r = np.ptp(tabla[['ventas']])
+print("El rango de ventas es: ", ventas_r)
+```
+
+```{python}
+# También se puede usar .describe() para obtener un análisis descriptivo
+tabla.describe()
+```
+
+```{python}
+# Ahora generaré un Histograma de las tres variables con matplotlib para compararlas.
+plt.clf() #Código para limpiar las gráficas anteriores
+plt.hist(tabla['ventas'], label='Ventas', color="green", lw=1, rwidth=0.5)
+plt.hist(tabla['gasto_de_publicidad'], label='Gastos de publicidad', color="purple", lw=1, rwidth=0.5)
+plt.hist(tabla['numero_de_empleados'], label='Número de empleados', color="blue")
+plt.legend(loc='upper left')
+plt.title("Histograma")
+plt.xticks(rotation=20)
+plt.show()
+```
+
+```{python}
+# Para verlas individualmente
+plt.clf()
+plt.hist(tabla['numero_de_empleados'], label='Número de empleados', color="blue", lw=1, rwidth=0.5)
+plt.show()
+# Se nota un sesgo negativo pero en general se mantiene estable el aumento de número de empleados.
+```
+
+```{python}
+plt.clf()
+plt.hist(tabla['gasto_de_publicidad'], label='Gasto de publicidad', color="purple", lw=1, rwidth=0.5)
+plt.show()
+# La gráfica de gasto de publicidad se ve un poco más constante con un un cambio entre los 34 mil y los 41 mil USD aproximadamente.
+```
+
+```{python}
+plt.clf()
+plt.hist(tabla['ventas'], label='Ventas', color="green", lw=1, rwidth=0.5)
+plt.show()
+# La gráfica de ventas se mantiene constante con un sesgo negativo, es muy similar a la de empleados.
+```
+
+```{python}
+# Ahora hago un Diagrama de caja con las tres variables juntas.
+plt.clf()
+plt.boxplot(tabla)
+plt.title("Diagrama de Caja")
+plt.show()
+```
+
+
+```{python}
+plt.clf()
+plt.boxplot(tabla['numero_de_empleados'])
+plt.title("Diagrama de Caja del número de empleados")
+plt.show()
+```
+
+```{python}
+plt.clf()
+plt.boxplot(tabla['gasto_de_publicidad'])
+plt.title("Diagrama de Caja del gasto de publicidad")
+plt.show()
+```
+
+```{python}
+plt.clf()
+plt.boxplot(tabla['ventas'])
+plt.title("Diagrama de Caja de las ventas")
+plt.show()
+```
+
+Comenta sobre la distribución de cada variable y cualquier observación relevante que puedas hacer sobre esos datos.
+
+# Paso 2: Construcción del Modelo de Regresión Lineal
+
+## Instrucciones:
+
+### - Formula el modelo de regresión lineal múltiple, considerando a la variable ventas en función de los gastos en publicidad y el número de empleados.
+### - Ajusta el modelo utilizando un software estadístico de tu preferencia (R, Python, etc.)
+### - Reporta los coeficientes estimados, el R2 y el R2 ajustada.
+
+```{python}
+# Importo las paqueterías estadísticas necesarias
+import pandas as pd
+import numpy as np
+
+# Importo paqueterías de Regresión Lineal
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split 
+import statsmodels.api as sm
+from scipy import stats
+
+# Importo paqueterías de visualización
+import matplotlib.pyplot as plt
+from matplotlib import style
+import seaborn as sns
+```
+
+```{python}
+# Genero la X_train con las variables explicativas
+X_train = tabla[['gasto_de_publicidad', 'numero_de_empleados']]
+# Genero la y_train con la variable dependiente
+y_train = tabla[['ventas']]
+# Creo mi modelo de Regresión Lineal
+lm = LinearRegression()
+# Lo entreno con las variables X_train y y_train
+lm.fit(X_train, y_train)
+```
+
+```{python}
+# Genero un objeto para guardar las predicciones que hará el modelo de acuerdo a los datos de entrenamiento que le di
+predictions_train = lm.predict(X_train)
+print('Error absoluto medio: ', mean_absolute_error(predictions_train, y_train), # MAE
+      'Raiz del error cuadrado medio: ', np.sqrt(mean_squared_error(predictions_train, y_train)), # RMSE
+      'Coeficiente de determinacion R2: ', lm.score(X_train, y_train), #85-90% es lo ideal
+      'Coeficiente estimado del modelo: ', lm.coef_, # Coeficiente del modelo
+      sep="\n") # Separar los resultados por párrafos
+```
+
+```{python}
+# Realizo lo mismo con statsmodels
+import statsmodels.api as sm
+X_constant = sm.add_constant(X_train)
+lin_reg = sm.OLS(y_train, X_constant).fit()
+print(lin_reg.summary())
+
+# El p-value de gastos de publicidad es es 0.941, por lo que no rechazo la H0, tanto H0 como HA aportan de manera conjunta al modelo.
+# La R2 es perfecta, por lo que el modelo está sobreajustado.
+```
+# Paso 3: Pruebas de Hipótesis sobre los Coeficientes
+
+## Instrucciones:
+
+### - Realiza las siguientes pruebas de hipótesis para cada coeficiente del modelo
+### - Hipótesis nula: Bi=0 (El coeficiente no es significativo).
+### - Hipótesis alternativa (Ha): Bi!=0 (El coeficiente es significativo).
+### - Utiliza un nivel de significancia del 5% para decidir si rechazas o no H0.
+### - Presenta los resultados de las pruebas, incluyendo los valores p y las conclusiones respectivas de cada prueba.
+
+# Prueba Durbin Watson
+Para validar la existencia de autocorrelación de orden 1 en los residuos del modelo.
+```{python}
+from statsmodels.stats.stattools import durbin_watson
+y_pred =lm.predict(X_train)  #Almaceno las predicciones
+y_pred = np.array(y_pred) # Lo convierto en array para hacer el cálculo
+residuals = y_train - y_pred # Genero los residuos
+print('Estadístico de la prueba Durbin Watson: ', durbin_watson(residuals))
+```
+
+### Prueba Jarque-Bera
+Para comprobar que se cumplan los criterios mínimos de los momentos de la distribución: la kurtosis y el sesgo. Y a partir de una prueba de hipótesis, constrastar que los residuos del modelo se comporten de manera normal.
+```{python}
+from statsmodels.compat import lzip
+import statsmodels.stats.api as sms
+
+name = ['Jarque-Bera', 'chi2 two-tail prob', 'skew', 'kurtosis'] # Creo un vector para ponerle nombre a los resultados
+test = sms.jarque_bera(residuals)
+lzip(name, test) # Con zip compacto los resultados
+
+# El sesgo es de 2.6 y la curtosis de 10.9, por lo que confirmo que el modelo no tiene una distribución normal, y acepto la Hipótesis Alternativa (HA).
+```
+
+### Prueba de multicolinealidad. Factor de Inflación de Varianza.
+Para probar que las variables independientes no se correlacionen entre sí.
+```{python}
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+X_train = pd.DataFrame(X_train) # Me aseguro de que X_train sea un DataFrame
+
+vif = [variance_inflation_factor(X_train.values, i) 
+      for i in range (X_train.shape[1])
+      ]
+pd.DataFrame({'VIF':vif[1:]}, index=X_train.columns).T # Desde la fila 1 hacia cualquier número de filas [1:] .T (trasponer con pandas)
+
+# Ambas X tienen muy alta multicolinealidad, por lo que no tiene sentido mantenerlas en el modelo, puedo utilizar sólo una.
+```
+
+# Paso 4: Análisis de los Residuos
+
+## Instrucciones:
+
+### - Realiza un análisis de los residuos del modelo apra verificar las suposiciones del modelo de regresión lineal:
+### - Normalidad de los residuos.
+### - Homoscedasticidad.
+### - Independencia de los residuos (no autocorrelación).
+### - Criterio: Evalúa si se cumplen las suposiciones y qué impacto podrían tener las violaciones (si las hay) en la interpretación del modelo.
+
+### Correlograma
+Para ver cómo se comportan los rezagos de las autocorrelaciones entre los residuos.
+```{python}
+import statsmodels.tsa.api as smt
+import matplotlib
+import matplotlib.pyplot as plt
+plt.clf()
+smt.graphics.plot_acf(residuals, lags=29, alpha=0.5)
+plt.title('Gráfica de autocorrelación')
+plt.show()
+
+# Hay tres residuos que salen de las barras, por lo que tienen fuerte correlación. Y, a pesar de que los demás no salen de las barras, no parecen tener un comportamiento aleatorio.
+```
+
+### Breusch-Pagan White test para Heteroscedasticidad
+Para crear un contraste de hipótesis a partir de definir el modelo.
+```{python}
+white_test = sms.het_breuschpagan(lin_reg.resid, lin_reg.model.exog)
+labels = ['Test Statistic', 'Test Statistic p-value', 'F-Statistic', 'F-Test p-value']
+print(dict(zip(labels, white_test)))
+# Se rechaza la Hipótesis nula (HO), ya que el modelo presenta el problema de heteroscedasticidad
+```
+
+# Paso 5: Conclusiones
+
+## Instrucciones:
+
+### - Resume los hallazgos del análisis. Comenta sobre la significancia de los coeficientes, la calidad del ajuste del modelo, y las implicaciones del análisis de residuos.
+### - Criterio: Debes justificar las decisiones y conclusiones con base en los resultados obtenidos.
+
+El modelo está sobreajustado, ya que todas las variables son similares. Los datos siguen una constante muy similar de crecimiento, por lo que las variables puede que estén creciendo juntas, sin embargo, el sobreajuste hace sospechar que el modelo no prediga de forma correcta en caso de haber situaciones inesperadas. Se necesitan datos más variados para que se acerque a la realidad.
+Con los datos que se tienen, se puede concluir que el aumento de las ventas provoca el aumento del gasto en publicidad y el aumento del número de empleados. Pero correlación no significa causalidad, si tuviera datos que demuestren que las ventas caen al gastar menos en publicidad, o al tener menos empleados, podría con más seguridad decir que la variable "ventas" es dependiente de las variables independientes.
+Para tenerlo de forma más visual, hice una comparación de regresión lineal simple en donde se puede observar la constancia en las variables, sin baches, sin cambios abruptos y, sobretodo, sin variedad de datos. 
+
+```{python}
+tabla2 = pd.DataFrame({'ventas': ventas, 'gasto_de_publicidad': gasto_publicidad})
+tabla2.head(5)
+```
+
+```{python}
+plt.clf()
+plt.scatter(tabla2[['ventas']], tabla2[['gasto_de_publicidad']])
+plt.title('Distribución de ventas respecto al gasto de publicidad')
+plt.xlabel('Gasto de publicidad')
+plt.ylabel('Ventas')
+plt.show()
+```
+
+```{python}
+tabla3 = pd.DataFrame({'ventas': ventas, 'numero_de_empleados': empleados})
+tabla3.head(5)
+```
+
+```{python}
+plt.clf()
+plt.scatter(tabla3[['ventas']], tabla3[['numero_de_empleados']])
+plt.title('Distribución del número de empleados respecto a las ventas')
+plt.xlabel('Ventas')
+plt.ylabel('Número de empleados')
+plt.show()
+```
+
+```{python}
+tabla4 = pd.DataFrame({'numero_de_empleados': empleados, 'gasto_de_publicidad': gasto_publicidad})
+tabla4.head(5)
+```
+
+```{python}
+plt.clf()
+plt.scatter(tabla4[['gasto_de_publicidad']], tabla4[['numero_de_empleados']])
+plt.title('Distribución del número de empleados respecto al gasto de publicidad')
+plt.xlabel('Gasto de publicidad')
+plt.ylabel('Número de empleados')
+plt.show()
+```
+
